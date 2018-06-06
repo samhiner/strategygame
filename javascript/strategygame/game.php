@@ -24,7 +24,7 @@
 
 	<div id='map' class='map'></div>
 
-	<div id='scaf'><!--document.getElementById('scaf').innerHTML +=--></div>
+	<div id='scaf' ><!--document.getElementById('scaf').innerHTML +=--></div>
 
 </body>
 <script>
@@ -61,61 +61,103 @@
 
 	}*/
 
-
+	//create map
 	for (row = 0; row < 40; row++) {
 		document.getElementById('map').innerHTML += '<span class="terrain" id="row' + row + '">' + '_'.repeat(40) + '</span><br>';
 	}
 
-	//for (x = 0; x < 40; x++) {
-	document.getElementById('row27').innerHTML = document.getElementById('row27').innerHTML.substr(0,30) + 'A' + document.getElementById('row27').innerHTML.substr(31,40);
-	position = [27,30];
+function pausecomp(millis)
+{
+    var date = new Date();
+    var curDate = null;
+    do { curDate = new Date(); }
+    while(curDate-date < millis);
+}
 
-	function vertMove(direct) {
-		if (direct == 'up') {
-			newPos = position[0] - 1;
-		} else {
-			newPos = position[0] + 1;
+
+
+	class sprite {
+		
+		constructor(position) {
+			//add sprite to map
+			document.getElementById('row' + position[0]).innerHTML = document.getElementById('row' + position[0]).innerHTML.substr(0,position[1]) + 'A' + document.getElementById('row' + position[0]).innerHTML.substr(position[1] + 1,40);
+			
+			this.position = position;
+
+			//expand later on this by having classes, health levels, etc
 		}
 
-		//delete sprite in old position
-		document.getElementById('row' + position[0]).innerHTML = document.getElementById('row' + position[0]).innerHTML.substr(0,position[1]) + '_' + document.getElementById('row' + position[0]).innerHTML.substr(position[1] + 1,40);
-		//create sprite in new position
-		document.getElementById('row' + newPos).innerHTML = document.getElementById('row' + newPos).innerHTML.substr(0,position[1]) + 'A' + document.getElementById('row' + newPos).innerHTML.substr(position[1] + 1,40);
-		
-		position = [newPos, position[1]];
-	}
+		move(direct) {
+			var position = this.position;
+			//delete sprite in old position
+			document.getElementById('row' + position[0]).innerHTML = document.getElementById('row' + position[0]).innerHTML.substr(0,position[1]) + '_' + document.getElementById('row' + position[0]).innerHTML.substr(position[1] + 1,40);
 
-	function horiMove(direct) {
-		if (direct == 'right') {
-				newPos = position[1] + 1;
+			if (direct == 'right' || direct == 'left') {
+				if (direct == 'right') {
+					var newPos = position[1] + 1;
+				} else {
+					var newPos = position[1] - 1;
+				} 
+				//create sprite in new position
+				document.getElementById('row' + position[0]).innerHTML = document.getElementById('row' + position[0]).innerHTML.substr(0,newPos) + 'A' + document.getElementById('row' + position[0]).innerHTML.substr(newPos + 1,40);
+				this.position = [position[0], newPos];
 			} else {
-				newPos = position[1] - 1;
+				if (direct == 'up') {
+					var newPos = position[0] - 1;
+				} else {
+					var newPos = position[0] + 1;
+				} 
+				document.getElementById('row' + newPos).innerHTML = document.getElementById('row' + newPos).innerHTML.substr(0,position[1]) + 'A' + document.getElementById('row' + newPos).innerHTML.substr(position[1] + 1,40);
+				this.position = [newPos, position[1]];
 			}
+		}
 
-		//delete sprite in old position
-		document.getElementById('row' + position[0]).innerHTML = document.getElementById('row' + position[0]).innerHTML.substr(0,position[1]) + '_' + document.getElementById('row' + position[0]).innerHTML.substr(position[1] + 1,40);
-		//create sprite in new position
-		document.getElementById('row' + position[0]).innerHTML = document.getElementById('row' + position[0]).innerHTML.substr(0,newPos) + 'A' + document.getElementById('row' + position[0]).innerHTML.substr(newPos + 1,40);
-
-		position = [position[0], newPos]
 	}
 
-	//}
-	document.onkeypress = function(key) {
-		//"or" statements are for other browsers
-	    key = key || window.event;
-	    charCode = key.keyCode || key.which;
-	    letter = String.fromCharCode(charCode);
-    	if (letter == 'w'  || letter == 'W') {
-    		vertMove('up');
-    	} else if (letter == 'a' || letter == 'A') {
-    		horiMove('left');
-    	} else if (letter == 's' || letter == 'S') {
-    		vertMove('down');
-    	} else if (letter == 'd' || letter == 'D') {
-    		horiMove('right');
-    	}
-    };
+	sprites = [];
+	sprites.push(new sprite([27,30]));
+	sprites.push(new sprite([10,20]));
+
+
+
+
+	function turns(current) {
+		moves = 3;
+		if (current >= sprites.length) {
+			current = 0;
+		}
+
+		//updates moves and if out of moves goes to next sprite
+		function moveUpdater(num) {
+			moves -= 1;
+			if (num == 0) {
+				turns(current + 1);
+			}
+		}
+
+		//runs when a key is pressed
+		document.onkeypress = function(key) {
+			//"or" statements are for other browsers
+			key = key || window.event;
+			charCode = key.keyCode || key.which;
+			letter = String.fromCharCode(charCode);
+			if (letter == 'w'  || letter == 'W') {
+				sprites[current].move('up');
+				moveUpdater(moves);
+			} else if (letter == 'a' || letter == 'A') {
+				sprites[current].move('left');
+				moveUpdater(moves);
+			} else if (letter == 's' || letter == 'S') {
+				sprites[current].move('down');
+				moveUpdater(moves);
+			} else if (letter == 'd' || letter == 'D') {
+				sprites[current].move('right');
+				moveUpdater(moves);
+			}
+		};
+	}
+
+	turns(0);
 
 </script>
 </html>
