@@ -66,21 +66,55 @@
 		document.getElementById('map').innerHTML += '<span class="terrain" id="row' + row + '">' + '_'.repeat(40) + '</span><br>';
 	}
 
-function pausecomp(millis)
-{
-    var date = new Date();
-    var curDate = null;
-    do { curDate = new Date(); }
-    while(curDate-date < millis);
-}
+	function pausecomp(millis)
+	{
+		var date = new Date();
+		var curDate = null;
+		do { curDate = new Date(); }
+		while(curDate-date < millis);
+	}
 
+	//function which finds out how many characters in a row before your sprite are HTML tags so it can adjust the position that it will place the sprite accordingly
+		//targetPos = where the sprite will move, foundInTag = how many chars found inside HTML tags, foundOutTag = num of chars found outside of HTML tags, nowInTag = are you in a tag now, x = where you are currenty in string.
+	function checkTerrain(targetPos,foundInTag,foundOutTag,nowInTag,x) {
+		if (nowInTag == true) {
+			foundInTag += 1;
+			if (document.getElementById('row' + targetPos[0]).innerHTML[x] == '>') {
+				nowInTag = false;
+			}
+		} else if (document.getElementById('row' + targetPos[0]).innerHTML[x] == '<') {
+			foundInTag += 1;
+			nowInTag = true;
+		} else {
+			foundOutTag += 1;
+		}
 
+		if (foundOutTag == targetPos[1]) {
+			var end = foundInTag;
+			return foundInTag;
+		} else {
+			return checkTerrain(targetPos,foundInTag,foundOutTag,nowInTag,x + 1);
+		}
+	}
+
+	
+
+	//replace the tile at given position with given letter
+	function replaceTile(position, newChar) {
+		var space = checkTerrain([position[0],position[1] + 1],0,0,false,0);
+		document.getElementById('row' + position[0]).innerHTML = document.getElementById('row' + position[0]).innerHTML.substr(0,position[1] + space) + newChar + document.getElementById('row' + position[0]).innerHTML.substr(position[1] + 1 + space,document.getElementById('row' + position[0]).innerHTML.length);
+	}
+
+	var blacklist = [];
+	blacklist.push([10, 10]);
+	blacklist.push([30,30]);
+	replaceTile(blacklist[0],'<span style="background-color: red;">_</span>');
 
 	class sprite {
 		
 		constructor(position) {
 			//add sprite to map
-			document.getElementById('row' + position[0]).innerHTML = document.getElementById('row' + position[0]).innerHTML.substr(0,position[1]) + 'A' + document.getElementById('row' + position[0]).innerHTML.substr(position[1] + 1,40);
+			replaceTile(position,'A');
 			
 			this.position = position;
 
@@ -89,34 +123,52 @@ function pausecomp(millis)
 
 		move(direct) {
 			var position = this.position;
-			//delete sprite in old position
-			document.getElementById('row' + position[0]).innerHTML = document.getElementById('row' + position[0]).innerHTML.substr(0,position[1]) + '_' + document.getElementById('row' + position[0]).innerHTML.substr(position[1] + 1,40);
 
+			//change position based on what button was pressed
 			if (direct == 'right' || direct == 'left') {
 				if (direct == 'right') {
-					var newPos = position[1] + 1;
+					var newPos = [position[0],position[1] + 1];
 				} else {
-					var newPos = position[1] - 1;
+					var newPos = [position[0],position[1] - 1];
 				} 
-				//create sprite in new position
-				document.getElementById('row' + position[0]).innerHTML = document.getElementById('row' + position[0]).innerHTML.substr(0,newPos) + 'A' + document.getElementById('row' + position[0]).innerHTML.substr(newPos + 1,40);
-				this.position = [position[0], newPos];
 			} else {
 				if (direct == 'up') {
-					var newPos = position[0] - 1;
+					var newPos = [position[0] - 1,position[1]];
 				} else {
-					var newPos = position[0] + 1;
+					var newPos = [position[0] + 1,position[1]];
 				} 
-				document.getElementById('row' + newPos).innerHTML = document.getElementById('row' + newPos).innerHTML.substr(0,position[1]) + 'A' + document.getElementById('row' + newPos).innerHTML.substr(position[1] + 1,40);
-				this.position = [newPos, position[1]];
 			}
+
+			var onBlackList = false;
+			console.log(newPos);
+			for (var x = 0; x < blacklist.length; x++) {
+				console.log(blacklist[x]);
+				if (blacklist[x][0] == newPos[0]) {
+					if (blacklist[x][1] == newPos[1]) {
+						onBlackList = true;
+						break;
+					}
+				}
+			}
+
+			if (onBlackList == true) {
+				alert('danger zone');
+				return;
+			}
+
+			//delete sprite in old position
+			replaceTile(position,'_');
+			//create sprite in new position
+			replaceTile(newPos,'A');
+			//change sprites logged position to the new position
+			this.position = newPos;
 		}
 
 	}
 
 	sprites = [];
 	sprites.push(new sprite([27,30]));
-	sprites.push(new sprite([10,20]));
+	sprites.push(new sprite([11,20]));
 
 
 
@@ -128,9 +180,9 @@ function pausecomp(millis)
 		}
 
 		//updates moves and if out of moves goes to next sprite
-		function moveUpdater(num) {
+		function turnUpdater() {
 			moves -= 1;
-			if (num == 0) {
+			if (moves == 0) {
 				turns(current + 1);
 			}
 		}
@@ -143,16 +195,16 @@ function pausecomp(millis)
 			letter = String.fromCharCode(charCode);
 			if (letter == 'w'  || letter == 'W') {
 				sprites[current].move('up');
-				moveUpdater(moves);
+				turnUpdater();
 			} else if (letter == 'a' || letter == 'A') {
 				sprites[current].move('left');
-				moveUpdater(moves);
+				turnUpdater();
 			} else if (letter == 's' || letter == 'S') {
 				sprites[current].move('down');
-				moveUpdater(moves);
+				turnUpdater();
 			} else if (letter == 'd' || letter == 'D') {
 				sprites[current].move('right');
-				moveUpdater(moves);
+				turnUpdater();
 			}
 		};
 	}
