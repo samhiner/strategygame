@@ -1,0 +1,14 @@
+@font-face {
+	font-family: 'Square'; 
+	src: url('square.ttf'); 
+}
+.terrain {
+	background-color: green;
+}
+.map {
+	font-family: 'Square', sans-serif;
+	font-size: 20px;
+}
+.yourTerrain {
+	background-color: red;
+}
