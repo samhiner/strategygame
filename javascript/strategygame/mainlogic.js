@@ -43,8 +43,8 @@ function pausecomp(millis)
 	while(curDate-date < millis);
 }
 
-//function which finds out how many characters in a row before your sprite are HTML tags so it can adjust the position that it will place the sprite accordingly
-	//targetPos = where the sprite will move, foundInTag = how many chars found inside HTML tags, foundOutTag = num of chars found outside of HTML tags, nowInTag = are you in a tag now, x = where you are currenty in string.
+//function which finds out how many characters that come before your sprite in a row are HTML tags so it can adjust the position so that it will place the sprite accordingly
+//targetPos = where the sprite will move, foundInTag = how many chars found inside HTML tags, foundOutTag = num of chars found outside of HTML tags, nowInTag = are you in a tag now, x = where you are currenty in string.
 function checkTerrain(targetPos,foundInTag,foundOutTag,nowInTag,x) {
 	if (nowInTag == true) {
 		foundInTag += 1;
@@ -75,6 +75,8 @@ function replaceTile(position, newChar) {
 }
 
 var blacklist = [];
+
+//testing
 blacklist.push([10, 10]);
 blacklist.push([30,30]);
 replaceTile(blacklist[0],'<span style="background-color: red;">_</span>');
@@ -86,10 +88,23 @@ class sprite {
 		replaceTile(position,'A');
 		
 		this.position = position;
+		blacklist.push(position);
 
 		//expand later on this by having classes, health levels, etc
 	}
 
+	//return true if a position is on the blacklist
+	blackListCheck(position) {
+		for (var x = 0; x < blacklist.length; x++) {
+			if (blacklist[x][0] == position[0]) {
+				if (blacklist[x][1] == position[1]) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
 	move(direct) {
 		var position = this.position;
 
@@ -107,30 +122,26 @@ class sprite {
 				var newPos = [position[0] + 1,position[1]];
 			} 
 		}
-
-		var onBlackList = false;
-		console.log(newPos);
-		for (var x = 0; x < blacklist.length; x++) {
-			console.log(blacklist[x]);
-			if (blacklist[x][0] == newPos[0]) {
-				if (blacklist[x][1] == newPos[1]) {
-					onBlackList = true;
-					break;
-				}
-			}
-		}
-
+		
+		var onBlackList = this.blackListCheck(newPos);
 		if (onBlackList == true) {
 			alert('danger zone');
-			return;
+			return true;
 		}
-
-		//delete sprite in old position
+		
+		//physically delete sprite in old position
 		replaceTile(position,'_');
+		//find sprite's old position in blacklist and remove it from blacklist
+		var blacklistIndex = blacklist.indexOf(position)
+		blacklist.splice(blacklistIndex,1);
+		
 		//create sprite in new position
 		replaceTile(newPos,'A');
+		blacklist.push(newPos);
 		//change sprites logged position to the new position
 		this.position = newPos;
+		
+		return false;
 	}
 
 }
@@ -139,7 +150,7 @@ sprites = [];
 sprites.push(new sprite([27,30]));
 sprites.push(new sprite([11,20]));
 
-
+console.log(blacklist)
 
 
 function turns(current) {
@@ -149,8 +160,12 @@ function turns(current) {
 	}
 
 	//updates moves and if out of moves goes to next sprite
-	function turnUpdater() {
-		moves -= 1;
+	function turnUpdater(redo) {
+		//if redo was not requested remove one "move"
+		if (redo == false) {
+			moves -= 1;
+		}
+		
 		if (moves == 0) {
 			turns(current + 1);
 		}
@@ -163,17 +178,17 @@ function turns(current) {
 		charCode = key.keyCode || key.which;
 		letter = String.fromCharCode(charCode);
 		if (letter == 'w'  || letter == 'W') {
-			sprites[current].move('up');
-			turnUpdater();
+			var redo = sprites[current].move('up');
+			turnUpdater(redo);
 		} else if (letter == 'a' || letter == 'A') {
-			sprites[current].move('left');
-			turnUpdater();
+			var redo = sprites[current].move('left');
+			turnUpdater(redo);
 		} else if (letter == 's' || letter == 'S') {
-			sprites[current].move('down');
-			turnUpdater();
+			var redo = sprites[current].move('down');
+			turnUpdater(redo);
 		} else if (letter == 'd' || letter == 'D') {
-			sprites[current].move('right');
-			turnUpdater();
+			var redo = sprites[current].move('right');
+			turnUpdater(redo);
 		}
 	};
 }
