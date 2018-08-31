@@ -1,46 +1,6 @@
-/*myTerritory = {}
-
-myTerritory[0] =[3,6];
-myTerritory[1] = [7,3];
-myTerritory[2] = [2,5];
-myTerritory[3] = [7,3];
-myTerritory[4] = [2,4];
-
-for (row = 0; row < 40; row++) {
-	for (col = 0; col < 40; col++) {
-		//if nothing in row is defined or your col in the row isnt defined id becomes normal terrain. else id is your terrain
-		if (myTerritory[row] == null || myTerritory[row].indexOf(col) == '-1') {
-			terrainType = 'terrain';
-		} else {
-			terrainType = 'yourTerrain';
-		}
-		document.getElementById('map').innerHTML += "<span class='" + terrainType + "' id='" + row + "," + col + "'>_</span>";
-	}
-	document.getElementById('map').innerHTML += '<br>';
-}
-
-
-
-
-
-/*freeTerrain = document.getElementsByName('terrain');
-
-for (x = 0; x < freeTerrain.length; x++) {
-	coords = freeTerrain[x].id.split(',');
-
-}*/
-
 //create map
 for (row = 0; row < 40; row++) {
 	document.getElementById('map').innerHTML += '<span class="terrain" id="row' + row + '">' + '_'.repeat(40) + '</span><br>';
-}
-
-function pausecomp(millis)
-{
-	var date = new Date();
-	var curDate = null;
-	do { curDate = new Date(); }
-	while(curDate-date < millis);
 }
 
 //function which finds out how many characters that come before your sprite in a row are HTML tags so it can adjust the position so that it will place the sprite accordingly
@@ -66,20 +26,11 @@ function checkTerrain(targetPos,foundInTag,foundOutTag,nowInTag,x) {
 	}
 }
 
-
-
 //replace the tile at given position with given letter
 function replaceTile(position, newChar) {
 	var space = checkTerrain([position[0],position[1] + 1],0,0,false,0);
 	document.getElementById('row' + position[0]).innerHTML = document.getElementById('row' + position[0]).innerHTML.substr(0,position[1] + space) + newChar + document.getElementById('row' + position[0]).innerHTML.substr(position[1] + 1 + space,document.getElementById('row' + position[0]).innerHTML.length);
 }
-
-var blacklist = [];
-
-//testing
-blacklist.push([10, 10]);
-blacklist.push([30,30]);
-replaceTile(blacklist[0],'<span style="background-color: red;">_</span>');
 
 class sprite {
 	
@@ -105,28 +56,44 @@ class sprite {
 		return false;
 	}
 	
+	spriteCollisionCheck() {
+		return
+	}
+
 	move(direct) {
 		var position = this.position;
 
 		//change position based on what button was pressed
-		if (direct == 'right' || direct == 'left') {
-			if (direct == 'right') {
-				var newPos = [position[0],position[1] + 1];
-			} else {
-				var newPos = [position[0],position[1] - 1];
-			} 
+		if (direct == 'right') {
+			var newPos = [position[0],position[1] + 1];
+		} else if (direct == 'left'){
+			var newPos = [position[0],position[1] - 1];
+		} else if (direct == 'up') {
+			var newPos = [position[0] - 1,position[1]];
 		} else {
-			if (direct == 'up') {
-				var newPos = [position[0] - 1,position[1]];
-			} else {
-				var newPos = [position[0] + 1,position[1]];
-			} 
-		}
+			var newPos = [position[0] + 1,position[1]];
+		} 
 		
-		var onBlackList = this.blackListCheck(newPos);
-		if (onBlackList == true) {
-			alert('danger zone');
+		if (this.blackListCheck(newPos)) {
 			return true;
+		}
+
+		//TODO move sprites from blacklist to spritecollisionlist
+
+		//TODO: make collision check function
+		if (this.spriteCollisionCheck(newPos)) {
+			if (confirm('Battle that sprite?')) {
+				if (Math.random() > 0.5) {
+					alert('You win!')
+					//TODO: kill other sprite
+				} else {
+					alert('You lose.')
+					//TODO: kill sprite
+					return true;
+				}
+			} else {
+				return true;
+			}
 		}
 		
 		//physically delete sprite in old position
@@ -144,14 +111,30 @@ class sprite {
 		return false;
 	}
 
+	kill() {
+		spriteIndex = sprites.indexOf(this)
+		if (spriteIndex != -1) {
+			sprites.splice(spriteIndex, 1) 
+		}
+	}
+
 }
+
+// TERRAIN CREATION
+
+var blacklist = [];
+
+blacklist.push([10, 10]);
+blacklist.push([30,30]);
+replaceTile(blacklist[0],'<span style="background-color: red;">_</span>');
+
+// SPRITE CREATION
 
 sprites = [];
 sprites.push(new sprite([27,30]));
 sprites.push(new sprite([11,20]));
 
-console.log(blacklist)
-
+// TURN MANAGEMENT
 
 function turns(current) {
 	moves = 3;
@@ -173,7 +156,7 @@ function turns(current) {
 
 	//runs when a key is pressed
 	document.onkeypress = function(key) {
-		//"or" statements are for other browsers
+		//"or" statements are for non-Google browsers
 		key = key || window.event;
 		charCode = key.keyCode || key.which;
 		letter = String.fromCharCode(charCode);
@@ -189,8 +172,17 @@ function turns(current) {
 		} else if (letter == 'd' || letter == 'D') {
 			var redo = sprites[current].move('right');
 			turnUpdater(redo);
+		} else if (letter == 'r' || letter == 'R') {
+			if (document.getElementById('stats').style.display == 'none') {
+				document.getElementById('stats').style.display = 'block';
+				document.getElementById('map').style.display = 'none';
+			} else {
+				document.getElementById('stats').style.display = 'none';
+				document.getElementById('map').style.display = 'block';
+			}
 		}
 	};
 }
 
 turns(0);
+
