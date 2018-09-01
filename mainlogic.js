@@ -39,25 +39,9 @@ class sprite {
 		replaceTile(position,'A');
 		
 		this.position = position;
-		blacklist.push(position);
+		spriteCollisionList.push(position);
 
 		//expand later on this by having classes, health levels, etc
-	}
-
-	//return true if a position is on the blacklist
-	blackListCheck(position) {
-		for (var x = 0; x < blacklist.length; x++) {
-			if (blacklist[x][0] == position[0]) {
-				if (blacklist[x][1] == position[1]) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-	
-	spriteCollisionCheck() {
-		return
 	}
 
 	move(direct) {
@@ -74,22 +58,35 @@ class sprite {
 			var newPos = [position[0] + 1,position[1]];
 		} 
 		
-		if (this.blackListCheck(newPos)) {
+		if (coordListCheck(blacklist, newPos) !== false) {
 			return true;
 		}
 
-		//TODO move sprites from blacklist to spritecollisionlist
-
 		//TODO: make collision check function
-		if (this.spriteCollisionCheck(newPos)) {
+		const spriteListIndex = coordListCheck(spriteCollisionList, newPos);
+		if (spriteListIndex !== false) {
 			if (confirm('Battle that sprite?')) {
 				if (Math.random() > 0.5) {
-					alert('You win!')
-					//TODO: kill other sprite
+					alert('You win!');
+
+					const oldIndex = sprites.indexOf(this);
+
+					replaceTile(newPos,'_');
+					const foreignSpriteIndex = coordListCheck(sprites, newPos, true)
+					killSprite(foreignSpriteIndex, spriteCollisionList.indexOf(spriteListIndex))
+
+					//if the index of the current sprite in the sprites list was after the sprite that was removed that index is now different
+					//indexDisrupted tells the turns function this and lets it adjust so it is still moving the proper sprite
+					if (oldIndex < foreignSpriteIndex) {
+						return 'kill-nominal';
+					} else {
+						return 'kill-indexDisrupted';
+					}
 				} else {
 					alert('You lose.')
-					//TODO: kill sprite
-					return true;
+					replaceTile(position,'_');
+					killSprite(sprites.indexOf(this), spriteCollisionList.indexOf(position))
+					return 'dead';
 				}
 			} else {
 				return true;
@@ -99,25 +96,47 @@ class sprite {
 		//physically delete sprite in old position
 		replaceTile(position,'_');
 		//find sprite's old position in blacklist and remove it from blacklist
-		var blacklistIndex = blacklist.indexOf(position)
-		blacklist.splice(blacklistIndex,1);
+		var spriteCollisionListIndex = spriteCollisionList.indexOf(position)
+		spriteCollisionList.splice(spriteCollisionListIndex, 1);
 		
 		//create sprite in new position
 		replaceTile(newPos,'A');
-		blacklist.push(newPos);
+		spriteCollisionList.push(newPos);
 		//change sprites logged position to the new position
 		this.position = newPos;
 		
 		return false;
 	}
 
-	kill() {
-		spriteIndex = sprites.indexOf(this)
-		if (spriteIndex != -1) {
-			sprites.splice(spriteIndex, 1) 
+}
+
+//TODO: doesnt have to be in here i think
+//return true if a coordinate position is on the blacklist
+function coordListCheck(list, position, spriteList = false) {
+	let current = []
+	for (var x = 0; x < list.length; x++) {
+		//if you are querying the list of sprites look at the coordinate attribute
+		if (spriteList) {
+			current = list[x].position
+		} else {
+			current = list[x]
+		}
+
+		if (current[0] == position[0]) {
+			if (current[1] == position[1]) {
+				//this can be 0 so make sure you use === when checking truth of this function
+				return x;
+			}
 		}
 	}
+	return false;
+}
 
+
+
+function killSprite(spriteIndex, collIndex) {
+	sprites.splice(spriteIndex, 1)
+	spriteCollisionList.splice(collIndex, 1)
 }
 
 // TERRAIN CREATION
@@ -130,9 +149,10 @@ replaceTile(blacklist[0],'<span style="background-color: red;">_</span>');
 
 // SPRITE CREATION
 
-sprites = [];
+var spriteCollisionList = [];
+var sprites = []; //ISSUE CHECK IF ADDING VAR MAKES NOT GLOBAL
 sprites.push(new sprite([27,30]));
-sprites.push(new sprite([11,20]));
+sprites.push(new sprite([27,29]));
 
 // TURN MANAGEMENT
 
@@ -145,11 +165,16 @@ function turns(current) {
 	//updates moves and if out of moves goes to next sprite
 	function turnUpdater(redo) {
 		//if redo was not requested remove one "move"
-		if (redo == false) {
+		if (redo == false || redo == 'kill-nominal') {
 			moves -= 1;
+		} else if (redo == 'dead') {
+			moves = 0
+		} else if (redo == 'kill-indexDisrupted') {
+			moves -= 1;
+			current -= 1;
 		}
-		
-		if (moves == 0) {
+
+		if (moves <= 0) {
 			turns(current + 1);
 		}
 	}
@@ -173,6 +198,8 @@ function turns(current) {
 			var redo = sprites[current].move('right');
 			turnUpdater(redo);
 		} else if (letter == 'r' || letter == 'R') {
+			statsDisplay = document.getElementById('stats').style.display
+			mapDisplay = document.getElementById('map').style.display
 			if (document.getElementById('stats').style.display == 'none') {
 				document.getElementById('stats').style.display = 'block';
 				document.getElementById('map').style.display = 'none';
